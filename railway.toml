@@ -1,5 +1,5 @@
 [deploy]
-startCommand = "python bot.py -t twilio -x voice-agent-chitti-production.up.railway.app --port $PORT"
+startCommand = "python bot.py -t twilio -x voice-agent-chitti-production.up.railway.app --port 7860"
 healthcheckPath = "/"
 healthcheckTimeout = 100
 restartPolicyType = "on_failure"
