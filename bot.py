@@ -12,6 +12,8 @@ from pipecat.processors.aggregators.llm_response_universal import (
     LLMContextAggregatorPair,
     LLMUserAggregatorParams,
 )
+from pinecone import Pinecone
+from pipecat.frames.frames import Frame
 from pipecat.processors.frameworks.rtvi import RTVIObserverParams
 from pipecat.runner.run import main
 from pipecat.runner.types import RunnerArguments
@@ -22,16 +24,27 @@ from pipecat.services.deepgram.stt import DeepgramSTTService
 from pipecat.services.openai.llm import OpenAILLMService
 from pipecat.transports.base_transport import BaseTransport, TransportParams
 from pipecat.transports.daily.transport import DailyParams
+from pipecat.frames.frames import LLMContextFrame
 from pipecat.transports.websocket.fastapi import (
     FastAPIWebsocketParams,
     FastAPIWebsocketTransport,
 )
+from pipecat.processors.frame_processor import (
+    FrameDirection,
+    FrameProcessor,
+)
 from pipecat_whisker import WhiskerObserver
-from pypdf import PdfReader
+from ingest import RAGDataBase
 
 load_dotenv()
 
-
+rag_db = RAGDataBase()
+rag_db.ingest_files(
+    file="KevinKakolla_SeniorAIEngineer.pdf", source="cv", document_type="resume"
+)
+rag_db.ingest_files(
+    file="Profile.pdf", source="linkedin", document_type="linkedin_exported_doc"
+)
 transport_params = {
     "daily": lambda: DailyParams(
         audio_in_enabled=True,
@@ -47,31 +60,34 @@ transport_params = {
     ),
 }
 
-
-cv_details = PdfReader("KevinKakolla_SeniorAIEngineer.pdf")
-linkedin_details = PdfReader("Profile.pdf")
-cv_details_pages = len(cv_details.pages)
-linkedin_details_pages = len(linkedin_details.pages)
 summary = """You are Kevin Kakolla's AI assistant representing him to recruiters.
   Answer questions about his background confidently and accurately based
   on his CV and LinkedIn. Keep answers concise since this is a voice call.
   Do not use bullet points, markdown, or formatting. If asked about
   availability or salary, say Kevin is open to discussing details directly"""
-cv_pages = ""
-for item in range(cv_details_pages):
-    page = cv_details.pages[item]
-    text = page.extract_text()
-    cv_pages += text
-linkedin_pages = ""
-for item in range(linkedin_details_pages):
-    page = linkedin_details.pages[item]
-    text = page.extract_text()
-    linkedin_pages += text
 
-summary += cv_pages + linkedin_pages
-# print(f"CV is {summary}")
 
 # print(f"summary is {summary}")
+
+
+class RAGProcessor(FrameProcessor):
+    """MetricsFrameLogger formats and logs all MetericsFrames"""
+
+    def __init__(self):
+        super().__init__()
+
+    async def process_frame(self, frame: Frame, direction: FrameDirection):
+        await super().process_frame(frame, direction)
+
+        if isinstance(frame, LLMContextFrame):
+            message = frame.context.messages[-1].get("content", "")
+            result = await rag_db.get_query(message)
+            frame.context.messages.append({"role": "user", "content": result})
+            await self.push_frame(frame, direction)
+        # ALWAYS push all frames
+        else:
+            # SUPER IMPORTANT: always push every frame!
+            await self.push_frame(frame, direction)
 
 
 async def run_bot(transport: BaseTransport, runner_args: RunnerArguments):
@@ -117,12 +133,14 @@ async def run_bot(transport: BaseTransport, runner_args: RunnerArguments):
             vad_analyzer=SileroVADAnalyzer(),
         ),
     )
+    rag_processor = RAGProcessor()
 
     pipeline = Pipeline(
         [
             transport.input(),  # Transport user input
             stt,
             user_aggregator,  # User responses
+            rag_processor,
             llm,  # LLM
             tts,  # TTS
             transport.output(),  # Transport bot output
