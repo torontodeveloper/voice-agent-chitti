@@ -1,35 +1,32 @@
-import os
 import logging
+import os
+
 from dotenv import load_dotenv
+from pipecat.audio.vad.silero import SileroVADAnalyzer
+from pipecat.frames.frames import LLMRunFrame
+from pipecat.pipeline.pipeline import Pipeline
+from pipecat.pipeline.runner import PipelineRunner
 from pipecat.pipeline.task import PipelineParams, PipelineTask
 from pipecat.processors.aggregators.llm_context import LLMContext
-from pipecat.audio.vad.silero import SileroVADAnalyzer
-from pipecat.services.deepgram.stt import DeepgramSTTService
-from pipecat.transports.websocket.fastapi import FastAPIWebsocketParams
-from pipecat.services.cartesia.tts import CartesiaTTSService
-from pipecat.services.openai.llm import OpenAILLMService
-from pipecat.transports.base_transport import BaseTransport, TransportParams
 from pipecat.processors.aggregators.llm_response_universal import (
     LLMContextAggregatorPair,
     LLMUserAggregatorParams,
 )
-from pipecat.services.groq.llm import GroqLLMService
-from pipecat_whisker import WhiskerObserver
-from pipecat.runner.types import WebSocketRunnerArguments
-from pipecat.frames.frames import LLMRunFrame
-from pipecat.pipeline.pipeline import Pipeline
-from pipecat.pipeline.runner import PipelineRunner
-from pipecat.runner.types import RunnerArguments
-from pipecat.transports.daily.transport import DailyParams
+from pipecat.processors.frameworks.rtvi import RTVIObserverParams
 from pipecat.runner.run import main
-from pipecat.transports.websocket.fastapi import (
-    FastAPIWebsocketTransport,
-)
-from groq import Groq
-from pipecat.services.openrouter.llm import OpenRouterLLMService
+from pipecat.runner.types import RunnerArguments
 from pipecat.runner.utils import parse_telephony_websocket
 from pipecat.serializers.twilio import TwilioFrameSerializer
-from pipecat.processors.frameworks.rtvi import RTVIObserverParams
+from pipecat.services.cartesia.tts import CartesiaTTSService
+from pipecat.services.deepgram.stt import DeepgramSTTService
+from pipecat.services.openai.llm import OpenAILLMService
+from pipecat.transports.base_transport import BaseTransport, TransportParams
+from pipecat.transports.daily.transport import DailyParams
+from pipecat.transports.websocket.fastapi import (
+    FastAPIWebsocketParams,
+    FastAPIWebsocketTransport,
+)
+from pipecat_whisker import WhiskerObserver
 from pypdf import PdfReader
 
 load_dotenv()
