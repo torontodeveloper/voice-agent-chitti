@@ -62,13 +62,11 @@ for item in range(cv_details_pages):
     page = cv_details.pages[item]
     text = page.extract_text()
     cv_pages += text
-print(f"CV is {cv_pages}")
 linkedin_pages = ""
 for item in range(linkedin_details_pages):
     page = linkedin_details.pages[item]
     text = page.extract_text()
     linkedin_pages += text
-print(f"Linkedin is {linkedin_pages}")
 
 summary += cv_pages + linkedin_pages
 # print(f"CV is {summary}")
