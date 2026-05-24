@@ -13,6 +13,8 @@ from pipecat.processors.aggregators.llm_response_universal import (
     LLMContextAggregatorPair,
     LLMUserAggregatorParams,
 )
+from pipecat.services.groq.llm import GroqLLMService
+from pipecat_whisker import WhiskerObserver
 from pipecat.runner.types import WebSocketRunnerArguments
 from pipecat.frames.frames import LLMRunFrame
 from pipecat.pipeline.pipeline import Pipeline
@@ -23,9 +25,12 @@ from pipecat.runner.run import main
 from pipecat.transports.websocket.fastapi import (
     FastAPIWebsocketTransport,
 )
+from groq import Groq
+from pipecat.services.openrouter.llm import OpenRouterLLMService
 from pipecat.runner.utils import parse_telephony_websocket
 from pipecat.serializers.twilio import TwilioFrameSerializer
 from pipecat.processors.frameworks.rtvi import RTVIObserverParams
+from pypdf import PdfReader
 
 load_dotenv()
 
@@ -46,6 +51,34 @@ transport_params = {
 }
 
 
+cv_details = PdfReader("KevinKakolla_SeniorAIEngineer.pdf")
+linkedin_details = PdfReader("Profile.pdf")
+cv_details_pages = len(cv_details.pages)
+linkedin_details_pages = len(linkedin_details.pages)
+summary = """You are Kevin Kakolla's AI assistant representing him to recruiters.
+  Answer questions about his background confidently and accurately based
+  on his CV and LinkedIn. Keep answers concise since this is a voice call.
+  Do not use bullet points, markdown, or formatting. If asked about
+  availability or salary, say Kevin is open to discussing details directly"""
+cv_pages = ""
+for item in range(cv_details_pages):
+    page = cv_details.pages[item]
+    text = page.extract_text()
+    cv_pages += text
+print(f"CV is {cv_pages}")
+linkedin_pages = ""
+for item in range(linkedin_details_pages):
+    page = linkedin_details.pages[item]
+    text = page.extract_text()
+    linkedin_pages += text
+print(f"Linkedin is {linkedin_pages}")
+
+summary += cv_pages + linkedin_pages
+# print(f"CV is {summary}")
+
+# print(f"summary is {summary}")
+
+
 async def run_bot(transport: BaseTransport, runner_args: RunnerArguments):
 
     stt = DeepgramSTTService(api_key=os.getenv("DEEPGRAM_API_KEY"))
@@ -61,10 +94,26 @@ async def run_bot(transport: BaseTransport, runner_args: RunnerArguments):
     llm = OpenAILLMService(
         api_key=os.getenv("OPENAI_API_KEY"),
         settings=OpenAILLMService.Settings(
-            model=os.getenv("OPENAI_MODEL", "gpt-4.1"),
-            system_instruction="You are a helpful assistant.",
+            model="gpt-5.4-mini",
+            system_instruction=f"{summary}",
         ),
     )
+
+    # llm = OpenRouterLLMService(
+    #     api_key=os.environ["OPENROUTER_API_KEY"],
+    #     model="meta-llama/llama-3.3-70b-instruct:free",
+    #     settings=OpenRouterLLMService.Settings(
+    #         system_instruction=summary,
+    #     ),
+    # )
+
+    # llm = GroqLLMService(
+    #     api_key=os.environ["GROQ_API_KEY"],
+    #     settings=GroqLLMService.Settings(
+    #         system_instruction=summary,
+    #     ),
+    #     model="llama-3.3-70b-versatile",
+    # )
 
     context = LLMContext()
     user_aggregator, assistant_aggregator = LLMContextAggregatorPair(
@@ -88,10 +137,11 @@ async def run_bot(transport: BaseTransport, runner_args: RunnerArguments):
 
     @transport.event_handler("on_client_connected")
     async def on_client_connected(transport, client):
-        logging.info("Client connected")
+        logging.info("Client connected*******")
+        print("Client connected*******")
         # Kick off the conversation.
         context.add_message(
-            {"role": "developer", "content": "Please introduce yourself to the user."}
+            {"role": "user", "content": "Please introduce yourself to the user."}
         )
         await task.queue_frames([LLMRunFrame()])
 
@@ -115,7 +165,7 @@ async def run_bot(transport: BaseTransport, runner_args: RunnerArguments):
             metrics_enabled=False,
         ),
     )
-
+    task.add_observer(WhiskerObserver(task.pipeline))
     await runner.run(task)
 
 
