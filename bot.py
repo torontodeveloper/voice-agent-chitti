@@ -38,9 +38,10 @@ from ingest import RAGDataBase
 
 load_dotenv()
 
-rag_db = RAGDataBase()
-rag_db.upsert(file="KevinKakolla_SeniorAIEngineer.pdf")
-rag_db.upsert(file="Profile.pdf")
+rag_db = None
+# rag_db = RAGDataBase()
+# rag_db.upsert(file="KevinKakolla_SeniorAIEngineer.pdf")
+# rag_db.upsert(file="Profile.pdf")
 transport_params = {
     "daily": lambda: DailyParams(
         audio_in_enabled=True,
@@ -87,6 +88,12 @@ class RAGProcessor(FrameProcessor):
 
 
 async def run_bot(transport: BaseTransport, runner_args: RunnerArguments):
+
+    global rag_db
+    if rag_db is None:
+        rag_db = RAGDataBase()
+        # rag_db.upsert(file="KevinKakolla_SeniorAIEngineer.pdf")
+        # rag_db.upsert(file="Profile.pdf")
 
     stt = DeepgramSTTService(api_key=os.getenv("DEEPGRAM_API_KEY"))
 
