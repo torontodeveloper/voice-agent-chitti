@@ -39,12 +39,8 @@ from ingest import RAGDataBase
 load_dotenv()
 
 rag_db = RAGDataBase()
-rag_db.ingest_files(
-    file="KevinKakolla_SeniorAIEngineer.pdf", source="cv", document_type="resume"
-)
-rag_db.ingest_files(
-    file="Profile.pdf", source="linkedin", document_type="linkedin_exported_doc"
-)
+rag_db.upsert(file="KevinKakolla_SeniorAIEngineer.pdf")
+rag_db.upsert(file="Profile.pdf")
 transport_params = {
     "daily": lambda: DailyParams(
         audio_in_enabled=True,
@@ -81,7 +77,7 @@ class RAGProcessor(FrameProcessor):
 
         if isinstance(frame, LLMContextFrame):
             message = frame.context.messages[-1].get("content", "")
-            result = await rag_db.get_query(message)
+            result = await rag_db.search_query(message)
             frame.context.messages.append({"role": "user", "content": result})
             await self.push_frame(frame, direction)
         # ALWAYS push all frames
