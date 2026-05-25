@@ -3,7 +3,7 @@
 A real-time voice AI agent you can call on the phone. Built with Pipecat, Twilio, Deepgram, Cartesia, and OpenAI. Fine tuned voice agent with RAG(Retrieval Augmented Generation)
 
 ## How it works
-
+# test
 ```
 Twilio (phone call) → Deepgram (STT) → Silero VAD → GPT-4.1 (LLM) → Cartesia (TTS) → Twilio (back to caller)
 ```
