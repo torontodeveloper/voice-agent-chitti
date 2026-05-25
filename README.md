@@ -1,6 +1,6 @@
 # Voice Agent
 
-A real-time voice AI agent you can call on the phone. Built with Pipecat, Twilio, Deepgram, Cartesia, and OpenAI.
+A real-time voice AI agent you can call on the phone. Built with Pipecat, Twilio, Deepgram, Cartesia, and OpenAI. Fine tuned voice agent with RAG(Retrieval Augmented Generation)
 
 ## How it works
 
