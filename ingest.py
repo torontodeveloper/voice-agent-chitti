@@ -74,7 +74,7 @@ class RAGDataBase:
             inputs={
                 "text": query,
             },
-            top_k=3,
+            top_k=5,
             fields=["chunk_text"],
         )
         return "".join([hit.fields["chunk_text"] for hit in chunks.result.hits])
